@@ -7,6 +7,7 @@ module.exports = pgPool => {
         SELECT * FROM users
         WHERE api_key = $1
       `, [apiKey]).then(res => {
+        console.log(humps.camelizeKeys(res.rows[0]))
         return humps.camelizeKeys(res.rows[0]);
       })
     },
@@ -17,6 +18,21 @@ module.exports = pgPool => {
       `, [user.id]).then(res => {
         return humps.camelizeKeys(res.rows);
       });
+    },
+    changeUserName: (apiKey, name) => {
+      return pgPool.query(`
+        UPDATE users
+        SET first_name = $1
+        WHERE api_key = $2
+      `, [name, apiKey]).then(res => {
+        return pgPool.query(`
+        SELECT * FROM users
+        WHERE api_key = $1
+      `, [apiKey])
+      }).then(res => {
+        console.log(humps.camelizeKeys(res.rows[0]))
+        return humps.camelizeKeys(res.rows[0]);
+      })
     }
   }
 }

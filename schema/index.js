@@ -7,8 +7,7 @@ const {
 
 const MeType = require('../types/me');
 
-// The root query is where in the data graph
-// we can start asking questions
+// The root query
 const RootQueryType = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
@@ -25,9 +24,28 @@ const RootQueryType = new GraphQLObjectType({
   }
 });
 
+// The mutation query
+const RootMutationQuery = new GraphQLObjectType({
+  name: 'RootMutationQuery',
+  fields: {
+    changeUserName: {
+      type: MeType,
+      description: 'Change user name by id',
+      args: {
+        key: { type: new GraphQLNonNull(GraphQLString) },
+        name: { type: new GraphQLNonNull(GraphQLString) }
+      },
+      resolve: (obj, args, { pgdb }) => {
+        const { key, name } = args;
+        return pgdb.changeUserName(key, name);
+      }
+    }
+  }
+});
+
 const ncSchema = new GraphQLSchema({
   query: RootQueryType,
-  // mutation: {}
+  mutation: RootMutationQuery
 });
 
 module.exports = ncSchema;

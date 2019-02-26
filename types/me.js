@@ -15,6 +15,7 @@ module.exports = new GraphQLObjectType({
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
     fullName: {
+      deprecationReason: 'não gostei',
       type:  GraphQLString,
       description: 'Custom field that concats the first and last name',
       resolve: obj => `${obj.firstName} ${obj.lastName}`
@@ -24,7 +25,6 @@ module.exports = new GraphQLObjectType({
     contests: {
       type: new GraphQLList(ContestType),
       resolve(obj, args, { pgdb }) {
-        console.log(obj)
         return pgdb.getContests(obj)
       }
     }
