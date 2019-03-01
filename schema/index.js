@@ -5,20 +5,20 @@ const {
   GraphQLNonNull,
 } = require('graphql');
 
-const MeType = require('../types/me');
+const UserType = require('../types/user');
 
 // The root query
 const RootQueryType = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
     me: {
-      type: MeType,
+      type: UserType,
       description: 'Get the current user identified by an api key',
       args: {
         key: { type: new GraphQLNonNull(GraphQLString) }
       },
       resolve: (obj, args, { pgdb }) => {
-        return pgdb.getUser(args.key);
+        return pgdb.getUserByApiKey(args.key);
       }
     }
   }
@@ -29,7 +29,7 @@ const RootMutationQuery = new GraphQLObjectType({
   name: 'RootMutationQuery',
   fields: {
     changeUserName: {
-      type: MeType,
+      type: UserType,
       description: 'Change user name by id',
       args: {
         key: { type: new GraphQLNonNull(GraphQLString) },
