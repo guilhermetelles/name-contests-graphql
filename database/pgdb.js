@@ -1,4 +1,6 @@
 const { orderedFor } = require('../lib/util');
+const humps = require('humps');
+const { slug } = require('../lib/util');
 
 module.exports = pgPool => {
 
@@ -35,20 +37,52 @@ module.exports = pgPool => {
         return orderedFor(res.rows, contestIds, 'contestId', false);
       });
     },
-    changeUserName: (apiKey, name) => {
+    getTotalVotesByNameIds: (namesIds) => {
       return pgPool.query(`
-        UPDATE users
-        SET first_name = $1
-        WHERE api_key = $2
-      `, [name, apiKey]).then(res => {
-        return pgPool.query(`
-        SELECT * FROM users
-        WHERE api_key = $1
-      `, [apiKey])
-      }).then(res => {
-        console.log(humps.camelizeKeys(res.rows[0]))
-        return humps.camelizeKeys(res.rows[0]);
+        SELECT name_id, up, down
+        FROM total_votes_by_name
+        WHERE name_id = ANY($1)
+      `, [namesIds]).then(res => {
+        return orderedFor(res.rows, namesIds, 'nameId', true);
       })
+    },
+    addNewContest({ apiKey, title, description }) {
+      return pgPool.query(`
+        INSERT INTO contests(code, title, description, created_by)
+        VALUES ($1, $2, $3,
+          (SELECT id FROM users WHERE api_key = $4))
+        RETURNING *
+      `, [slug(title), title, description, apiKey]).then(res => {
+        return humps.camelizeKeys(res.rows[0]);
+      });
+    },
+    addNewName({ apiKey, contestId, label, description }) {
+      return pgPool.query(`
+        INSERT INTO names(contest_id, label, normalized_label,
+          description, created_by)
+        VALUES ($1, $2, $3, $4,
+          (SELECT id FROM users WHERE api_key = $5))
+        RETURNING *
+      `, [contestId, label, slug(label),
+          description, apiKey])
+      .then(res => {
+        return humps.camelizeKeys(res.rows[0]);
+      });
+    },
+    getActivitiesForUserIds: (userIds) => {
+      return pgPool.query(`
+        SELECT created_by, created_at, label, '' as title,
+          'name' as activity_type
+        FROM names
+        WHERE created_by = ANY($1)
+        UNION
+        SELECT created_by, created_at, '' as label, title,
+          'contest' as activity_type
+        FROM contests
+        WHERE created_by = ANY($1)
+      `, [userIds]).then(res => {
+        return orderedFor(res.rows, userIds, 'createdBy', false);
+      });
     }
   }
 }
